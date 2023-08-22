@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -60,9 +62,9 @@ func commandGetUserNames(s *discordgo.Session, m *discordgo.MessageCreate, optio
 }
 
 const (
-	Scissors = "Makas"
-	Rock     = "Taş"
-	Paper    = "Kağıt"
+	Scissors = "makas"
+	Rock     = "taş"
+	Paper    = "kağıt"
 )
 
 // Play Paper Rock Scissors
@@ -79,11 +81,78 @@ func commandPRS(s *discordgo.Session, m *discordgo.MessageCreate, options ...str
 		s.ChannelMessageSend(m.ChannelID, "Bir secim yapcan knk")
 		return errors.New("Not choosen a prs")
 	}
-	choose := options[0]
-	if choose != Scissors && choose != Rock && choose != Paper {
+	userChoose := options[0]
+	if userChoose != Scissors && userChoose != Rock && userChoose != Paper {
 		s.ChannelMessageSend(m.ChannelID, "Düzgün oyna lan")
 		return errors.New("Given string is not a prs")
 	}
+	stringToSeed := func(input string) int64 {
+		seed := int64(0)
+		for _, char := range input {
+			seed += int64(char)
+		}
+		return seed
+	}
+	source := rand.NewSource(stringToSeed(m.Author.ID) * int64(time.Now().Nanosecond()))
+	random := rand.New(source)
+	botChooseNum := random.Intn(3)
+	botChoose := ""
+	switch botChooseNum {
+	case 0:
+		botChoose = "kağıt"
+
+	case 1:
+		botChoose = "taş"
+
+	case 2:
+		botChoose = "makas"
+	}
+	getWinner := func(c1, c2 string) int {
+		if c1 == Rock {
+			switch c2 {
+			case Rock:
+				return 0
+			case Scissors:
+				return 1
+			case Paper:
+				return 2
+			}
+		}
+		if c1 == Scissors {
+			switch c2 {
+			case Rock:
+				return 2
+			case Scissors:
+				return 0
+			case Paper:
+				return 1
+			}
+		}
+		if c1 == Paper {
+			switch c2 {
+			case Rock:
+				return 1
+			case Scissors:
+				return 2
+			case Paper:
+				return 0
+			}
+		}
+		return 0
+	}
+	winner := getWinner(userChoose, botChoose)
+	sonuc := "Berabere"
+	switch winner {
+	case 1:
+		sonuc = "Afferin Adam Oluyon"
+	case 2:
+		sonuc = "YENDİM PİÇ, ŞİMDİ SİKTİR GİT"
+	default:
+		sonuc = "Sakinn, kimse kimseye hiçbi şey yapamadı"
+	}
+	stringToShow := fmt.Sprintf("Ben Sectim: %v\n %v Secti: %v\n Sonuc:%v", botChoose, m.Author.Username, userChoose, sonuc)
+	s.ChannelMessageSend(m.ChannelID, stringToShow)
+
 	return nil
 }
 func getCommands() map[string]Command {
