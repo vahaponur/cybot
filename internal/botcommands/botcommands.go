@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -26,7 +27,7 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	command.Callback(s, m, fields[1:]...)
+	go command.Callback(s, m, fields[1:]...)
 
 }
 
@@ -48,17 +49,43 @@ func commandGetUserNames(s *discordgo.Session, m *discordgo.MessageCreate, optio
 		log.Default()
 	}
 	members, err := s.GuildMembers(c.GuildID, "", 1000)
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	wg.Add(len(members))
 	mem := ""
 	for _, me := range members {
-		permissions, _ := s.UserChannelPermissions(me.User.ID, c.ID)
-		if permissions&discordgo.PermissionReadMessages != 0 {
-			mem += fmt.Sprintf("%v\n", me.User.Username)
 
-		}
+		go printUser(s, c, me, &mem, &wg, &mu)
+
 	}
+	wg.Wait()
 	s.ChannelMessageSend(m.ChannelID, mem)
 
 	return nil
+}
+func printUser(s *discordgo.Session, c *discordgo.Channel, me *discordgo.Member, mem *string, wg *sync.WaitGroup, mu *sync.Mutex) {
+	defer wg.Done()
+
+	now := time.Now()
+	permissions, _ := s.State.UserChannelPermissions(me.User.ID, c.ID)
+	passed := time.Until(now)
+	if permissions&discordgo.PermissionViewChannel != 0 {
+		mu.Lock()
+		*mem += fmt.Sprintf("%v Time Passed:%v\n", me.User.Username, passed)
+		mu.Unlock()
+	}
+
+}
+func printPermUser(s *discordgo.Session, c *discordgo.Channel, me *discordgo.Member, mem *string, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	permissions, err := s.State.UserChannelPermissions(me.User.ID, c.ID)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	*mem += fmt.Sprintf("%v Permission:%v\n", me.User.Username, permissions)
+
 }
 
 const (

@@ -26,6 +26,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	dg.Identify.Intents = discordgo.IntentsAll
 	dg.Open()
 	fmt.Println("Bot is now running. Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
