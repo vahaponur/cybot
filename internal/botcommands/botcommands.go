@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os/exec"
+
 	"strings"
 	"sync"
 	"time"
@@ -37,8 +39,38 @@ type Command struct {
 }
 
 func commandPlay(s *discordgo.Session, m *discordgo.MessageCreate, options ...string) error {
+	// Get the guild (server) ID of the message
+	guildID := m.GuildID
+
+	// Retrieve the current user's session state
+	state := s.State
+
+	// Get the voice state of the author using the state
+	voiceState, err := state.VoiceState(guildID, m.Author.ID)
+	if err != nil || voiceState == nil || voiceState.ChannelID == "" {
+		s.ChannelMessageSend(m.ChannelID, "You are not in a voice channel.")
+		return nil
+	}
+
+	// Join the author's voice channel
+	vc, err := s.ChannelVoiceJoin(guildID, voiceState.ChannelID, false, false)
+	if err != nil {
+		log.Fatal("Error joining voice channel: ", err)
+		return err
+	}
+	defer vc.Disconnect()
+
+	// URL of the YouTube video you want to play
+	videoURL := "https://www.youtube.com/watch?v=vxa8ShIm9yw"
+
+	// Download the audio file using youtube-dl
+
+	cmd := exec.Command("youtube-dl", "-o", "-x", videoURL)
+	_, err = cmd.StdoutPipe()
+
 	return nil
 }
+
 func commandGetUserNames(s *discordgo.Session, m *discordgo.MessageCreate, options ...string) error {
 	c, err := s.Channel(m.ChannelID)
 	if err != nil {
@@ -182,6 +214,55 @@ func commandPRS(s *discordgo.Session, m *discordgo.MessageCreate, options ...str
 
 	return nil
 }
+func commandKoyluler(s *discordgo.Session, m *discordgo.MessageCreate, options ...string) error {
+	c, err := s.Channel(m.ChannelID)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if c.Type != discordgo.ChannelTypeGuildText {
+		log.Default()
+	}
+	poem := "Köylüleri niçin öldürmeliyiz?\n" +
+		"Çünkü onlar ağır kanlı adamlardır\n" +
+		"Değişen bir dünyaya karşı\n" +
+		"Kerpiç duvarlar gibi katı\n" +
+		"Çakır dikenleri gibi susuz\n" +
+		"Kayıtsızca direnerek yaşarlar.\n" +
+		"Aptal, kaba ve kurnazdırlar.\n" +
+		"İnanarak ve kolayca yalan söylerler.\n" +
+		"Paraları olsa da\n" +
+		"Yoksul görünmek gibi bir hünerleri vardır.\n" +
+		"Her şeyi hafife alır ve herkese söverler.\n" +
+		"Yağmuru, rüzgarı ve güneşi\n" +
+		"Bir gün olsun ekinleri akıllarına gelmeden\n" +
+		"Düşünemezler…\n" +
+		"Ve birbirlerinin sınırlarını sürerek\n" +
+		"Topraklarını büyütmeye çalışırlar.\n" +
+		"\n" +
+		"Köylüleri niçin öldürmeliyiz?\n" +
+		"Çünkü onlar karılarını döverler\n" +
+		"Seslerinin tonu yumuşak değildir\n" +
+		// Diğer satırlar burada devam eder...
+		"Yarı gecelerde yıldızlara bakarak\n" +
+		"Başka dünyaları düşünmek gibi bir tutkuları yoktur.\n" +
+		"Gökyüzünü baharda yağmur yağarsa\n" +
+		"Ve yaz güneşleri ekinlerini yetirirse severler.\n" +
+		"Hayal güçleri kıttır ve hiçbir yeniliğe\n" +
+		"-Bu verimi yüksek bir tohum bile olsa-\n" +
+		"Sonuçlarını görmeden inanmazlar.\n" +
+		"Dünyanın gelişimine bir katkıları yoktur.\n" +
+		"Mülk düşkünüdürler amansız derecede\n" +
+		"Bir ülkenin geleceği\n" +
+		"Küçücük topraklarının ipoteği altındadır.\n" +
+		"Ve birer kaya parçası gibi dururlar su geçirmeden\n" +
+		"Zamanın derin ırmakları önünde…\n" +
+		"\n" +
+		"KÖYLÜLERİ, SÖYLEYİN NASIL\n" +
+		"NASIL KURTARALIM?"
+	s.ChannelMessageSend(m.ChannelID, poem)
+	return nil
+}
 func getCommands() map[string]Command {
 	return map[string]Command{
 		"!play": {
@@ -195,6 +276,10 @@ func getCommands() map[string]Command {
 		"!tkm": {
 			Prefix:   "!tkm",
 			Callback: commandPRS,
+		},
+		"!koyluler": {
+			Prefix:   "!koyluler",
+			Callback: commandKoyluler,
 		},
 	}
 }
