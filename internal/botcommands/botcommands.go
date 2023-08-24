@@ -110,6 +110,7 @@ func commandGetUserNames(s *discordgo.Session, m *discordgo.MessageCreate, optio
 
 	}
 	wg.Wait()
+	mem = mem[:1999]
 	s.ChannelMessageSend(m.ChannelID, mem)
 
 	return nil
@@ -126,6 +127,7 @@ func printUser(s *discordgo.Session, c *discordgo.Channel, me *discordgo.Member,
 	passed := time.Until(now)
 	if permissions&discordgo.PermissionViewChannel != 0 {
 		mu.Lock()
+		fmt.Println(me.User.Username)
 		*mem += fmt.Sprintf("%v Time Passed:%v\n", me.User.Username, passed)
 		mu.Unlock()
 	}
@@ -228,7 +230,7 @@ func commandPRS(s *discordgo.Session, m *discordgo.MessageCreate, options ...str
 	case 1:
 		sonuc = "Afferin Adam Oluyon"
 	case 2:
-		sonuc = "YENDİM PİÇ, ŞİMDİ SİKTİR GİT"
+		sonuc = "Yendimm knk ağla bağır"
 	default:
 		sonuc = "Sakinn, kimse kimseye hiçbi şey yapamadı"
 	}
@@ -288,23 +290,23 @@ func commandKoyluler(s *discordgo.Session, m *discordgo.MessageCreate, options .
 }
 func getCommands() map[string]Command {
 	return map[string]Command{
-		"/play": {
+		"c/play": {
 			Prefix:   "!play",
 			Callback: commandPlay,
 		},
-		"/agalar": {
+		"c/agalar": {
 			Prefix:   "!agalar",
 			Callback: commandGetUserNames,
 		},
-		"/tkm": {
+		"c/tkm": {
 			Prefix:   "!tkm",
 			Callback: commandPRS,
 		},
-		"/koyluler": {
+		"c/koyluler": {
 			Prefix:   "!koyluler",
 			Callback: commandKoyluler,
 		},
-		"/stop": {
+		"c/stop": {
 			Prefix:   "!stop",
 			Callback: commandStop,
 		},
