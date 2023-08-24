@@ -288,23 +288,23 @@ func commandKoyluler(s *discordgo.Session, m *discordgo.MessageCreate, options .
 }
 func getCommands() map[string]Command {
 	return map[string]Command{
-		"!play": {
+		"/play": {
 			Prefix:   "!play",
 			Callback: commandPlay,
 		},
-		"!agalar": {
+		"/agalar": {
 			Prefix:   "!agalar",
 			Callback: commandGetUserNames,
 		},
-		"!tkm": {
+		"/tkm": {
 			Prefix:   "!tkm",
 			Callback: commandPRS,
 		},
-		"!koyluler": {
+		"/koyluler": {
 			Prefix:   "!koyluler",
 			Callback: commandKoyluler,
 		},
-		"!stop": {
+		"/stop": {
 			Prefix:   "!stop",
 			Callback: commandStop,
 		},
