@@ -5,16 +5,19 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"os/exec"
 
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/foxbot/gavalink"
 )
 
 type User = discordgo.User
+
+var lavalink *gavalink.Lavalink
+var player *gavalink.Player
 
 func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
@@ -28,7 +31,9 @@ func MessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if !ok {
 		return
 	}
-
+	for _, r := range fields {
+		fmt.Println(r)
+	}
 	go command.Callback(s, m, fields[1:]...)
 
 }
@@ -39,35 +44,49 @@ type Command struct {
 }
 
 func commandPlay(s *discordgo.Session, m *discordgo.MessageCreate, options ...string) error {
-	// Get the guild (server) ID of the message
-	guildID := m.GuildID
-
-	// Retrieve the current user's session state
-	state := s.State
-
-	// Get the voice state of the author using the state
-	voiceState, err := state.VoiceState(guildID, m.Author.ID)
-	if err != nil || voiceState == nil || voiceState.ChannelID == "" {
-		s.ChannelMessageSend(m.ChannelID, "You are not in a voice channel.")
+	c, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		log.Println("fail find channel")
 		return nil
 	}
 
-	// Join the author's voice channel
-	vc, err := s.ChannelVoiceJoin(guildID, voiceState.ChannelID, false, false)
+	g, err := s.State.Guild(c.GuildID)
 	if err != nil {
-		log.Fatal("Error joining voice channel: ", err)
-		return err
+		log.Println("fail find guild")
+		return nil
 	}
-	defer vc.Disconnect()
 
-	// URL of the YouTube video you want to play
-	videoURL := "https://www.youtube.com/watch?v=vxa8ShIm9yw"
+	for _, vs := range g.VoiceStates {
+		if vs.UserID == m.Author.ID {
+			log.Println("trying to connect to channel")
+			err = s.ChannelVoiceJoinManual(c.GuildID, vs.ChannelID, false, false)
+			if err != nil {
+				log.Println(err)
+			} else {
+				log.Println("channel voice join succeeded")
+			}
+		}
+	}
+	qs := strings.Join(options, "%20")
+	query := fmt.Sprintf("ytsearch:%v", qs)
+	fmt.Println(query)
+	node, err := lavalink.BestNode()
+	if err != nil {
+		log.Println(err)
+	}
+	tracks, err := node.LoadTracks(query)
+	if err != nil {
+		log.Println(err)
+	}
+	if tracks.Type != gavalink.TrackLoaded {
+		log.Println("weird tracks type: ", tracks.Type)
+	}
+	track := tracks.Tracks[0].Data
 
-	// Download the audio file using youtube-dl
-
-	cmd := exec.Command("youtube-dl", "-o", "-x", videoURL)
-	_, err = cmd.StdoutPipe()
-
+	err = player.Play(track)
+	if err != nil {
+		log.Println(err)
+	}
 	return nil
 }
 
@@ -94,6 +113,10 @@ func commandGetUserNames(s *discordgo.Session, m *discordgo.MessageCreate, optio
 	s.ChannelMessageSend(m.ChannelID, mem)
 
 	return nil
+}
+func commandStop(s *discordgo.Session, m *discordgo.MessageCreate, options ...string) error {
+	err := player.Stop()
+	return err
 }
 func printUser(s *discordgo.Session, c *discordgo.Channel, me *discordgo.Member, mem *string, wg *sync.WaitGroup, mu *sync.Mutex) {
 	defer wg.Done()
@@ -280,6 +303,10 @@ func getCommands() map[string]Command {
 		"!koyluler": {
 			Prefix:   "!koyluler",
 			Callback: commandKoyluler,
+		},
+		"!stop": {
+			Prefix:   "!stop",
+			Callback: commandStop,
 		},
 	}
 }

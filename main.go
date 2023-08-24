@@ -18,10 +18,13 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+
 	token := os.Getenv("DISCORD_TOKEN")
-	fmt.Println("1")
 	dg, err := discordgo.New("Bot " + token)
-	fmt.Println("2")
+	dg.SyncEvents = false
+
+	dg.AddHandler(botcommands.Ready)
+	dg.AddHandler(botcommands.VoiceServerUpdate)
 	dg.AddHandler(botcommands.MessageCreate)
 	if err != nil {
 		log.Fatal(err)
