@@ -69,7 +69,7 @@ func commandPlay(s *discordgo.Session, m *discordgo.MessageCreate, options ...st
 	}
 	qs := strings.Join(options, "%20")
 	query := fmt.Sprintf("ytsearch:%v", qs)
-	fmt.Println(query)
+
 	node, err := lavalink.BestNode()
 	if err != nil {
 		log.Println(err)
@@ -77,16 +77,25 @@ func commandPlay(s *discordgo.Session, m *discordgo.MessageCreate, options ...st
 	tracks, err := node.LoadTracks(query)
 	if err != nil {
 		log.Println(err)
+		return err
 	}
 	if tracks.Type != gavalink.TrackLoaded {
 		log.Println("weird tracks type: ", tracks.Type)
-	}
-	track := tracks.Tracks[0].Data
 
+	}
+	td := tracks.Tracks[0]
+	track := td.Data
+
+	title := td.Info.Title
+	player.Volume(40)
 	err = player.Play(track)
+
 	if err != nil {
 		log.Println(err)
+		s.ChannelMessageSend(m.ChannelID, "Sarki bulunamadi")
+		return err
 	}
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Playing: %v", title))
 	return nil
 }
 
